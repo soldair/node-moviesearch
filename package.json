@@ -1,0 +1,16 @@
+{ "name": "moviesearch"
+ , "description": "Search Popular sites for movie information."
+ , "version": "0.0.1"
+ , "author": "Ryan Day <soldair@gmail.com>"
+ , "keywords": ["movies","search","imdb","netflix","scraper"]
+ , "main": "./imdb.js"
+ , "homepage":"http://github.com/soldair/node-moviesearch"
+ , "repository":{
+	"type":"git"
+	, "url":"git://github.com/soldair/node-moviesearch.git"
+ }
+ , "engines":{"node":">=0.2.3"}
+ , "dependencies" : {
+	"jsdom" : ">=0.1.20"
+ }
+}
