@@ -1,5 +1,5 @@
 
-var imdb = require(__dirname+'/../imdb.js');
+var imdb = require(__dirname+'/../app.js').imdb;
 
 imdb.search('harry potter and the goblet of fire',function(err,data){
 
