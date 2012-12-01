@@ -1,7 +1,7 @@
 
 var imdb = require(__dirname+'/../app.js').imdb;
 
-imdb.search('hobbit',function(err,data){
+imdb.search('the hobbit',function(err,data){
 
 	console.log(data)
 	if(err) console.log(err+" "+err.stack);

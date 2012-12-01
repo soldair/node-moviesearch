@@ -39,45 +39,34 @@ module.exports = exports = {
         
 				subjectPs.each(function(i){
 					var text = this.textContent.trim(); 
-					if(text.indexOf('Media from') == 0) {
-            // DOESNT EXIST ANY MORE
-						var title = $(this).find('a').text()
-							, titleId = $(this).find('a').attr('href').split('/')[2];
-						
-						// handle media content
-						//
-						$(nextTag('table',this)).find(".video").each(function(){
-							var href = $(this).parent().attr('href');
-							//this kinda sucks but i dont want any video on demand links only those i know i can chase for real mp4 files
-							if(href.indexOf('/video/screenplay/') == 0){
-								//found a preview/clip
-								if(!response.titles[titleId]) response.titles[titleId] = {};
-								if(!response.titles[titleId].media) response.titles[titleId].media = [];
-								
-								response.titles[titleId].media.push({
-									type:'video'
-									,name:title
-									,href:'http://www.imdb.com'+href
-									,thumb:this.src
-								});
-							}
-						});
 
-					} else if(text.indexOf('Popular') == 0) {
-            // DOESNT EXIST ANY MORE
-						var popular = processTitles($('.findList').eq(i),$);
-						mergeRecursive(popular,response.titles);
-
-						$.each(popular,function(id,v){
-							response.popular.push(id);
-						});
-					} else if(text.indexOf('Titles') == 0){
+					if(text.indexOf('Titles') == 0){
 						var titles = processTitles($('.findList').eq(i),$);
 						mergeRecursive(titles,response.titles);
+            console.log('EACHING TITLES ');
             $.each(titles,function(k,t){
-              response.popular[t.rank] = k;
+              console.log(k,t);
+              if(t.rank < 10) response.popular[t.rank] = k;
+              console.log(title);
+              if(t.name.toLowerCase().indexOf(title.toLowerCase()) > -1) {
+                response.exact.push(k);
+              } else {
+                var lc = title.toLowerCase().trim();
+                var words = lc.split(/\s+/);
+                var partial = false;
+
+                words.forEach(function(w){
+                  console.log('testing word ',w,'on ',t.name);
+                  if(!partial && t.name.indexOf(w) > -1) {
+                    response.partial.push(k);
+                    partial = true;
+                  }
+                });
+                if(!partial) response.approx.push(k);
+              }
             });
 					}
+
 				});
 				}catch(err){/*forward error to cb*/}
 				
@@ -100,7 +89,6 @@ module.exports = exports = {
 					var title = this.textContent
 						, titleId = href.split('/')[2];
 
-          console.log(titleId,href);				
 	        if(!titles[titleId]) r = rank++;
           else r = titles[titleId].rank;
 					if(!titles[titleId]) titles[titleId] = {};
