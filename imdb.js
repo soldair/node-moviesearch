@@ -1,11 +1,11 @@
 /*
-* copyright 2010 Ryan Day
 *
 * Licensed under the MIT license:
 * http://www.opensource.org/licenses/mit-license.php
 *
 */
 var scraper = require(__dirname+'/lib/scraper.js');
+var jsdom = require('jsdom');
 
 module.exports = exports = {
 	//search('title',cb[(error,data)])
@@ -13,13 +13,18 @@ module.exports = exports = {
 		if(!(title||'').length) {
 			cb('title to search required',false);
 			return false; 
-		}
-		scraper.get('http://www.imdb.com/find?s=tt&q='+encodeURIComponent(title),function(body,response){
+    }
+	
+		scraper.get('http://www.imdb.com/find?s=tt&q='+encodeURIComponent(title),function(err,body){
 			var document = scraper.loadDom(body);
-			scraper.injectJquery(document,function(err,window){
+
+      var window = document.createWindow();
+
+
+			scraper.injectJquery(document,function(err){
 				var $ = window.jQuery
 					,main = $("#main")
-					,subjectPs = main.children('p');
+					,subjectPs = main.find('.findSectionHeader');
 
 				var response = {
 					titles:{},
@@ -31,11 +36,11 @@ module.exports = exports = {
 				,media = {}; 
 
 				try{
-				subjectPs.each(function(){
+        
+				subjectPs.each(function(i){
 					var text = this.textContent.trim(); 
-					//console.log('text: '+text);
 					if(text.indexOf('Media from') == 0) {
-
+            // DOESNT EXIST ANY MORE
 						var title = $(this).find('a').text()
 							, titleId = $(this).find('a').attr('href').split('/')[2];
 						
@@ -59,30 +64,19 @@ module.exports = exports = {
 						});
 
 					} else if(text.indexOf('Popular') == 0) {
-
-						var popular = processTitles($(this).children('table').eq(0),$);
+            // DOESNT EXIST ANY MORE
+						var popular = processTitles($('.findList').eq(i),$);
 						mergeRecursive(popular,response.titles);
 
 						$.each(popular,function(id,v){
 							response.popular.push(id);
 						});
 					} else if(text.indexOf('Titles') == 0){
-						var titles = processTitles($(this).children('table').eq(0),$);
+						var titles = processTitles($('.findList').eq(i),$);
 						mergeRecursive(titles,response.titles);
-						// handle titles
-						if(text.indexOf('Exact') != -1) {
-							$.each(titles,function(id,v){
-								response.exact.push(id);
-							});
-						} else if(text.indexOf('Partial') != -1) {
-							$.each(titles,function(id,v){
-								response.partial.push(id);
-							});
-						} else if(text.indexOf('Approx') != -1) {
-							$.each(titles,function(id,v){
-								response.approx.push(id);
-							});
-						}
+            $.each(titles,function(k,t){
+              response.popular[t.rank] = k;
+            });
 					}
 				});
 				}catch(err){/*forward error to cb*/}
@@ -94,25 +88,29 @@ module.exports = exports = {
 		});
 		
 		function processTitles(titleTable,$){
-
 			try{
 			var titles = {};
 			var as = titleTable.find("a");
-
-			as.each(function(){
+      var rank = 0;
+			as.each(function(i){
 				var href = $(this).attr('href');
 
 				if(href.indexOf('/title/') != -1) {
 					//is a title
 					var title = this.textContent
 						, titleId = href.split('/')[2];
-					
+
+          console.log(titleId,href);				
+	        if(!titles[titleId]) r = rank++;
+          else r = titles[titleId].rank;
 					if(!titles[titleId]) titles[titleId] = {};
 					
-					titles[titleId].name = title;
+					if(title.length) titles[titleId].name = title;
 					titles[titleId].href = 'http://www.imdb.com'+href;
-					titles[titleId].thumb = $(this).parents('tr').find('td:first a img').attr('src')||null;
-					
+          var thumb = $(this).parents('tr').find('td:first a img').attr('src')||null;
+					if(thumb) titles[titleId].thumb = thumb;
+					titles[titleId].rank = r;
+
 					var childNodes = this.parentNode.childNodes;
 					$.each(childNodes,function(k,v){
 						if(v.nodeName == "#text") {
@@ -128,7 +126,6 @@ module.exports = exports = {
 			}catch(e) {
 				console.log(e.toString()+' '+e.stack);
 			}
-			//console.log('DONE!!!!!!!!!!!!!!!');
 			return titles;
 		}
 		//jQuery next doesnt seem to work for me now =/
